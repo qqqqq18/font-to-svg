@@ -36,12 +36,39 @@ export class FontCache {
    * Load a font and add to cache
    */
   private async load(cacheKey: string, fontFile?: string): Promise<TextToSVG> {
-    let fontPath: string
+    let fontPath: string | null = null
     let textToSVG: TextToSVG
     
     if (fontFile) {
-      // Custom font from uploads
-      fontPath = path.join(process.cwd(), 'uploads', fontFile)
+      // Sanitize path to prevent path traversal attacks
+      const sanitizedFontFile = this.sanitizePath(fontFile)
+      
+      // Try different locations in order of priority
+      const searchPaths = [
+        // 1. Direct path in fonts directory (e.g., "458/MPLUS2-Light.ttf")
+        path.join(process.cwd(), 'fonts', sanitizedFontFile),
+        // 2. Uploads directory with path
+        path.join(process.cwd(), 'uploads', sanitizedFontFile),
+        // 3. Direct file in fonts directory (backward compatibility)
+        path.join(process.cwd(), 'fonts', path.basename(sanitizedFontFile)),
+        // 4. Direct file in uploads directory (backward compatibility)
+        path.join(process.cwd(), 'uploads', path.basename(sanitizedFontFile))
+      ]
+      
+      // Find the first existing file
+      for (const searchPath of searchPaths) {
+        try {
+          await fs.access(searchPath)
+          fontPath = searchPath
+          break
+        } catch {
+          // File doesn't exist, try next path
+        }
+      }
+      
+      if (!fontPath) {
+        throw new Error(`Font file not found: ${fontFile}`)
+      }
     } else {
       // Default font
       fontPath = path.join(process.cwd(), 'fonts', 'SourceHanSerifJP-Light.otf')
@@ -73,6 +100,20 @@ export class FontCache {
     console.log(`Font cached: ${cacheKey} (${this.formatBytes(fileSize)}), Total cache size: ${this.formatBytes(this.totalSize)}`)
     
     return textToSVG
+  }
+  
+  /**
+   * Sanitize font file path to prevent path traversal attacks
+   */
+  private sanitizePath(fontFile: string): string {
+    // Remove any leading slashes, "..", and "."
+    const normalized = path.normalize(fontFile).replace(/^(\.\.(\/|\\|$))+/, '')
+    
+    // Ensure the path doesn't escape the intended directories
+    const parts = normalized.split(/[\/\\]/)
+    const sanitized = parts.filter(part => part !== '..' && part !== '.' && part !== '').join(path.sep)
+    
+    return sanitized
   }
   
   /**

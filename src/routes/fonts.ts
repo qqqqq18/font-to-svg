@@ -10,44 +10,63 @@ import * as crypto from 'crypto'
 const fontRoutes = new Hono()
 
 /**
- * Get list of available fonts
+ * Recursively scan directory for font files
  */
-async function getAvailableFonts(): Promise<FontInfo[]> {
+async function scanFontDirectory(dir: string, baseDir: string, family: string): Promise<FontInfo[]> {
   const fonts: FontInfo[] = []
   
-  // Default fonts
-  const defaultFontsDir = path.join(process.cwd(), 'fonts')
   try {
-    const defaultFiles = await fs.readdir(defaultFontsDir)
-    for (const file of defaultFiles) {
-      if (file.match(/\.(ttf|otf)$/i)) {
+    const entries = await fs.readdir(dir, { withFileTypes: true })
+    
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      const relativePath = path.relative(baseDir, fullPath)
+      
+      if (entry.isDirectory()) {
+        // Recursively scan subdirectories
+        const subFonts = await scanFontDirectory(fullPath, baseDir, family)
+        fonts.push(...subFonts)
+      } else if (entry.isFile() && entry.name.match(/\.(ttf|otf)$/i)) {
+        // Found a font file
+        const nameWithoutExt = path.basename(entry.name).replace(/\.(ttf|otf)$/i, '')
         fonts.push({
-          name: file.replace(/\.(ttf|otf)$/i, ''),
-          file: file,
-          family: 'Default',
+          name: relativePath.includes(path.sep) 
+            ? `${path.dirname(relativePath)}${path.sep}${nameWithoutExt}`
+            : nameWithoutExt,
+          file: relativePath,
+          family: family,
           style: 'Regular'
         })
       }
     }
   } catch (error) {
+    console.error(`Failed to scan directory ${dir}:`, error)
+  }
+  
+  return fonts
+}
+
+/**
+ * Get list of available fonts
+ */
+async function getAvailableFonts(): Promise<FontInfo[]> {
+  const fonts: FontInfo[] = []
+  
+  // Default fonts - scan recursively
+  const defaultFontsDir = path.join(process.cwd(), 'fonts')
+  try {
+    const defaultFonts = await scanFontDirectory(defaultFontsDir, defaultFontsDir, 'Default')
+    fonts.push(...defaultFonts)
+  } catch (error) {
     console.error('Failed to read default fonts directory:', error)
   }
   
-  // Uploaded fonts
+  // Uploaded fonts - scan recursively
   const uploadsDir = path.join(process.cwd(), 'uploads')
   try {
     await fs.mkdir(uploadsDir, { recursive: true })
-    const uploadedFiles = await fs.readdir(uploadsDir)
-    for (const file of uploadedFiles) {
-      if (file.match(/\.(ttf|otf)$/i)) {
-        fonts.push({
-          name: file.replace(/\.(ttf|otf)$/i, ''),
-          file: file,
-          family: 'Uploaded',
-          style: 'Regular'
-        })
-      }
-    }
+    const uploadedFonts = await scanFontDirectory(uploadsDir, uploadsDir, 'Uploaded')
+    fonts.push(...uploadedFonts)
   } catch (error) {
     console.error('Failed to read uploads directory:', error)
   }
@@ -151,14 +170,30 @@ fontRoutes.post(
 
 /**
  * DELETE /api/fonts/:filename - Delete an uploaded font
+ * Note: filename parameter can include path separators for nested fonts
  */
-fontRoutes.delete('/:filename', async (c) => {
+fontRoutes.delete('/:filename(.*)', async (c) => {
   try {
     const filename = c.req.param('filename')
     
+    if (!filename) {
+      return c.json(
+        {
+          error: 'bad_request',
+          message: 'Filename is required'
+        },
+        400
+      )
+    }
+    
+    // Sanitize path to prevent path traversal attacks
+    const normalized = path.normalize(filename).replace(/^(\.\.(\/|\\|$))+/, '')
+    const parts = normalized.split(/[\/\\]/)
+    const sanitizedFilename = parts.filter(part => part !== '..' && part !== '.' && part !== '').join(path.sep)
+    
     // Prevent deletion of default fonts
     const defaultFontsDir = path.join(process.cwd(), 'fonts')
-    const defaultPath = path.join(defaultFontsDir, filename)
+    const defaultPath = path.join(defaultFontsDir, sanitizedFilename)
     
     try {
       await fs.access(defaultPath)
@@ -175,7 +210,7 @@ fontRoutes.delete('/:filename', async (c) => {
     
     // Delete from uploads directory
     const uploadsDir = path.join(process.cwd(), 'uploads')
-    const uploadPath = path.join(uploadsDir, filename)
+    const uploadPath = path.join(uploadsDir, sanitizedFilename)
     
     try {
       await fs.unlink(uploadPath)
