@@ -1,0 +1,112 @@
+### Health Check
+GET http://localhost:3000/health
+
+### Root Endpoint
+GET http://localhost:3000/
+
+### List Fonts
+GET http://localhost:3000/api/fonts
+
+### Generate Simple SVG
+POST http://localhost:3000/api/svg
+Content-Type: application/json
+
+{
+  "text": "Hello World",
+  "options": {
+    "fontSize": 72,
+    "attributes": {
+      "fill": "#333333"
+    }
+  }
+}
+
+### Generate SVG with Custom Anchor
+POST http://localhost:3000/api/svg
+Content-Type: application/json
+
+{
+  "text": "Centered Text",
+  "options": {
+    "fontSize": 48,
+    "anchor": "center middle",
+    "attributes": {
+      "fill": "#ff0000"
+    }
+  }
+}
+
+### Generate Multiline SVG
+POST http://localhost:3000/api/svg
+Content-Type: application/json
+
+{
+  "text": "Line 1\\nLine 2\\nLine 3",
+  "options": {
+    "fontSize": 36,
+    "lineHeight": 1.5,
+    "textAlign": "center",
+    "attributes": {
+      "fill": "#0000ff"
+    }
+  }
+}
+
+### Generate SVG with Arc
+POST http://localhost:3000/api/svg
+Content-Type: application/json
+
+{
+  "text": "Curved Text",
+  "options": {
+    "fontSize": 60,
+    "envelope": {
+      "arc": {
+        "angle": 30
+      }
+    },
+    "attributes": {
+      "fill": "#00aa00"
+    }
+  }
+}
+
+### Get Path Data Only
+POST http://localhost:3000/api/svg/path
+Content-Type: application/json
+
+{
+  "text": "Path Only",
+  "options": {
+    "fontSize": 48
+  }
+}
+
+### Get Metrics Only
+POST http://localhost:3000/api/svg/metrics
+Content-Type: application/json
+
+{
+  "text": "Metrics Test",
+  "options": {
+    "fontSize": 72
+  }
+}
+
+### Debug Mode
+POST http://localhost:3000/api/svg
+Content-Type: application/json
+
+{
+  "text": "Debug Mode",
+  "options": {
+    "fontSize": 60
+  },
+  "debug": true
+}
+
+### Get Cache Statistics
+GET http://localhost:3000/api/cache/stats
+
+### Clear Font Cache
+POST http://localhost:3000/api/cache/clear
