@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Convert text to SVG via REST API using Hono",
   "main": "dist/index.js",
+  "license": "MIT",
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc && vite build",

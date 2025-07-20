@@ -271,4 +271,26 @@ curl -X POST http://localhost:3000/api/svg \
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Font License
+
+The default font (Source Han Serif JP) is licensed under the SIL Open Font License, Version 1.1.
+- Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+- Source Han Serif is a trademark of Adobe in the United States and/or other countries.
+
+For more information about the font license, visit: https://github.com/adobe-fonts/source-han-serif
+
+## Credits
+
+This project is a REST API implementation based on the original [text-to-svg](https://github.com/shrhdk/text-to-svg) library by Hideki Shiro.
+
+### Dependencies
+
+- [opentype.js](https://github.com/nodebox/opentype.js): Copyright (c) 2015 Frederik De Bleser
+- [svg-pathdata](https://github.com/nfroidure/svg-pathdata): Copyright (c) 2017 Nicolas Froidure
+- [svgpath](https://github.com/fontello/svgpath): Copyright (c) 2013-2015 Vitaly Puzrin
+- [hono](https://github.com/honojs/hono): Copyright (c) 2021-present Yusuke Wada
+- [zod](https://github.com/colinhacks/zod): Copyright (c) 2020 Colin McDonnell
+
+All of the above are released under the MIT license.
