@@ -1,17 +1,18 @@
 import { defineConfig } from 'vite'
-import { resolve } from 'path'
+import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   build: {
+    target: 'node18',
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: fileURLToPath(new URL('./src/index.ts', import.meta.url)),
       name: 'font-to-svg-api',
-      fileName: 'index',
-      formats: ['cjs']
+      formats: ['es'],
+      fileName: () => 'index.js'
     },
     rollupOptions: {
       external: [
-        /^node:/,
+        // Node.js built-in modules
         'fs',
         'fs/promises',
         'path',
@@ -22,6 +23,20 @@ export default defineConfig({
         'http',
         'http2',
         'https',
+        'os',
+        'child_process',
+        'util',
+        'events',
+        'assert',
+        'zlib',
+        'tls',
+        'net',
+        'dns',
+        'readline',
+        'vm',
+        // Node.js prefix
+        /^node:/,
+        // Dependencies (these should not be bundled)
         '@hono/node-server',
         'hono',
         '@hono/zod-validator',
@@ -31,10 +46,18 @@ export default defineConfig({
         'svgpath'
       ],
       output: {
-        format: 'cjs'
+        format: 'es'
       }
     },
-    target: 'node18',
-    ssr: true
+    minify: false,
+    emptyOutDir: true
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
+  ssr: {
+    noExternal: []
   }
 })
